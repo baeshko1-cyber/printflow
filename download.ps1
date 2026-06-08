@@ -2,7 +2,7 @@
 # Pravaya knopka na fayle -> "Vypolnit s pomoshchyu PowerShell"
 
 $ErrorActionPreference = "SilentlyContinue"
-$PLAYLIST = "lk.799fa788-940c-4b6c-9d1c-7316144b09f7"
+$USER     = "baeshko1"
 $OUTPUT   = "$HOME\Desktop\Muzyka"
 
 function Clean-Name($s) {
@@ -99,23 +99,35 @@ try {
 Write-Host ""
 Write-Host "  Zagruzhayu pleylist..."
 
+# Get all playlists for the user and find "Mne nravitsya"
 $playlist = $null
-$endpoints = @(
-    "/users/$uid/playlists/$PLAYLIST`?rich-tracks=true",
-    "/users/$uid/playlists/$PLAYLIST",
-    "/playlists/$PLAYLIST`?rich-tracks=true",
-    "/playlists/$PLAYLIST"
-)
-foreach ($ep in $endpoints) {
-    try {
-        $res = Call-Api $ep $h
-        if ($res) { $playlist = $res; break }
-    } catch {}
+Write-Host "  Poluchayu spisok pleylistov dlya $USER ..."
+
+try {
+    $allPlaylists = Call-Api "/users/$USER/playlists/list" $h
+    if ($allPlaylists) {
+        Write-Host "  Nayden pleylisty:"
+        foreach ($pl in $allPlaylists) {
+            Write-Host ("    [" + $pl.kind + "] " + $pl.title)
+        }
+        # pick first non-empty playlist (or kind=3 for likes)
+        $target = $allPlaylists | Where-Object { $_.kind -eq 3 } | Select-Object -First 1
+        if (-not $target) { $target = $allPlaylists | Select-Object -First 1 }
+        if ($target) {
+            $kind = $target.kind
+            Write-Host "  Zagruzhayu: $($target.title) (kind=$kind)"
+            $playlist = Call-Api "/users/$USER/playlists/$kind`?rich-tracks=true" $h
+        }
+    }
+} catch {}
+
+if (-not $playlist) {
+    # fallback: try kind=3 directly
+    try { $playlist = Call-Api "/users/$USER/playlists/3?rich-tracks=true" $h } catch {}
 }
 
 if (-not $playlist) {
     Write-Host "  Ne udalos zaguzit pleylist."
-    Write-Host "  Vozmozhno, nado otkryt pleylist v brauzere i sohranit ego v 'Moyu muzyku'."
     Read-Host "  Enter"
     exit
 }
