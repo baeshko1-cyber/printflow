@@ -57,6 +57,7 @@ foreach ($track in $tracks) {
     $outTemplate = "$output\$num %(title)s.%(ext)s"
 
     $result = & $ytdlp "ytsearch1:$track" `
+        -f "bestaudio[ext=m4a]/bestaudio" `
         --no-playlist `
         --cookies-from-browser opera `
         -o $outTemplate `
