@@ -82,7 +82,7 @@ Write-Host "  Proverka avtorizatsii..."
 
 try {
     $status = Call-Api "/account/status" $h
-    # try multiple possible field paths
+    Write-Host "  DEBUG account fields: $($status | ConvertTo-Json -Depth 3 -Compress)"
     $uid = $status.account.uid
     if (-not $uid) { $uid = $status.uid }
     if (-not $uid) { $uid = $status.account.login }
@@ -91,7 +91,7 @@ try {
     if (-not $uname) { $uname = $status.account.fullName }
     Write-Host "  OK! Privet, $uname (uid=$uid)"
 } catch {
-    Write-Host "  Oshibka avtorizatsii. Proverte token."
+    Write-Host "  Oshibka: $_"
     Read-Host "  Enter"
     exit
 }
@@ -110,6 +110,7 @@ try {
         foreach ($pl in $allPlaylists) {
             Write-Host ("    [" + $pl.kind + "] " + $pl.title)
         }
+        Write-Host "  DEBUG: $($allPlaylists | ConvertTo-Json -Depth 1 -Compress)"
         # pick first non-empty playlist (or kind=3 for likes)
         $target = $allPlaylists | Where-Object { $_.kind -eq 3 } | Select-Object -First 1
         if (-not $target) { $target = $allPlaylists | Select-Object -First 1 }
@@ -119,15 +120,18 @@ try {
             $playlist = Call-Api "/users/$USER/playlists/$kind`?rich-tracks=true" $h
         }
     }
-} catch {}
-
-if (-not $playlist) {
-    # fallback: try kind=3 directly
-    try { $playlist = Call-Api "/users/$USER/playlists/3?rich-tracks=true" $h } catch {}
+} catch {
+    Write-Host "  OSHIBKA pri poluchenii pleylistov: $_"
 }
 
 if (-not $playlist) {
-    Write-Host "  Ne udalos zaguzit pleylist."
+    try { $playlist = Call-Api "/users/$USER/playlists/3?rich-tracks=true" $h } catch {
+        Write-Host "  OSHIBKA kind=3: $_"
+    }
+}
+
+if (-not $playlist) {
+    Write-Host "  Ne udalos zaguzit pleylist. Prishli skrinshot etogo ekrana."
     Read-Host "  Enter"
     exit
 }
