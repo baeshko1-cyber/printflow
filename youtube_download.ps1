@@ -20,10 +20,21 @@ if (-not (Test-Path $ytdlp)) {
     exit
 }
 
-# Auto-update yt-dlp
+# Kill any hung yt-dlp processes that may lock the file
+Get-Process yt-dlp -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 1
+
+# Auto-update yt-dlp (download to temp, then replace)
 Write-Host "Obnovlyayu yt-dlp..."
-Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile $ytdlp -ErrorAction SilentlyContinue
-Write-Host "yt-dlp obnovlen."
+$tmp = "$HOME\Desktop\yt-dlp-new.exe"
+try {
+    Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile $tmp -ErrorAction Stop
+    Move-Item -Path $tmp -Destination $ytdlp -Force -ErrorAction Stop
+    Write-Host "yt-dlp obnovlen."
+} catch {
+    Write-Host "Ne udalos obnovit yt-dlp (ispolzuyu tekushchiy): $_"
+    if (Test-Path $tmp) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+}
 Write-Host ""
 
 New-Item -ItemType Directory -Path $output -Force | Out-Null
