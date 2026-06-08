@@ -6,7 +6,8 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 
 $tracksFile = "$HOME\Desktop\tracks.txt"
 $output     = "$HOME\Desktop\Muzyka"
-$ytdlp      = "$HOME\Desktop\yt-dlp.exe"
+# Use a FRESH binary name to avoid the locked old yt-dlp.exe
+$ytdlp      = "$HOME\Desktop\ytdlp.exe"
 
 if (-not (Test-Path $tracksFile)) {
     Write-Host "Ne najden fayl: $tracksFile"
@@ -14,26 +15,19 @@ if (-not (Test-Path $tracksFile)) {
     exit
 }
 
-if (-not (Test-Path $ytdlp)) {
-    Write-Host "Ne najden yt-dlp.exe: $ytdlp"
-    Read-Host "Enter"
-    exit
-}
-
-# Kill any hung yt-dlp processes that may lock the file
-Get-Process yt-dlp -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+# Kill any hung yt-dlp processes
+Get-Process yt-dlp, ytdlp -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
-# Auto-update yt-dlp (download to temp, then replace)
-Write-Host "Obnovlyayu yt-dlp..."
-$tmp = "$HOME\Desktop\yt-dlp-new.exe"
+# Download a fresh yt-dlp under a new name
+Write-Host "Skachivayu svezhiy yt-dlp..."
 try {
-    Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile $tmp -ErrorAction Stop
-    Move-Item -Path $tmp -Destination $ytdlp -Force -ErrorAction Stop
-    Write-Host "yt-dlp obnovlen."
+    if (Test-Path $ytdlp) { Remove-Item $ytdlp -Force -ErrorAction SilentlyContinue }
+    Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile $ytdlp -ErrorAction Stop
+    Write-Host "yt-dlp gotov."
 } catch {
-    Write-Host "Ne udalos obnovit yt-dlp (ispolzuyu tekushchiy): $_"
-    if (Test-Path $tmp) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+    Write-Host "Ne udalos skachat yt-dlp: $_"
+    if (-not (Test-Path $ytdlp)) { Read-Host "Enter"; exit }
 }
 Write-Host ""
 
