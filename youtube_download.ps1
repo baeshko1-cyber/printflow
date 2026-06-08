@@ -20,6 +20,12 @@ if (-not (Test-Path $ytdlp)) {
     exit
 }
 
+# Auto-update yt-dlp
+Write-Host "Obnovlyayu yt-dlp..."
+Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile $ytdlp -ErrorAction SilentlyContinue
+Write-Host "yt-dlp obnovlen."
+Write-Host ""
+
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 
 $tracks = Get-Content $tracksFile -Encoding UTF8 | Select-Object -Skip 1 | Where-Object { $_.Trim() -ne "" }
@@ -34,21 +40,18 @@ foreach ($track in $tracks) {
     $i++
     $num = ([string]$i).PadLeft(3, '0')
 
-    # Check if already downloaded (by number prefix)
     $existing = Get-ChildItem -Path $output -Filter "$num *" -File 2>$null
     if ($existing) {
-        Write-Host "[$i/$total] SKIP (uzhe est)"
+        Write-Host "[$i/$total] SKIP"
         $ok++
         continue
     }
 
-    Write-Host "[$i/$total] Skachayu #$i..." -NoNewline
+    Write-Host "[$i/$total] $i..." -NoNewline
 
-    # Let yt-dlp name the file: "001 YouTube Title.mp3"
     $outTemplate = "$output\$num %(title)s.%(ext)s"
 
     $result = & $ytdlp "ytsearch1:$track" `
-        -f bestaudio `
         --no-playlist `
         --cookies-from-browser opera `
         -o $outTemplate `
@@ -56,12 +59,11 @@ foreach ($track in $tracks) {
 
     $downloaded = Get-ChildItem -Path $output -Filter "$num *" -File 2>$null
     if ($downloaded) {
-        Write-Host " OK: $($downloaded.Name)"
+        Write-Host " OK"
         $ok++
     } else {
         Write-Host " FAIL"
-        # Show first error line from yt-dlp output
-        $errLine = $result | Where-Object { $_ -match "ERROR|error" } | Select-Object -First 1
+        $errLine = $result | Where-Object { $_ -match "ERROR" } | Select-Object -First 1
         if ($errLine) { Write-Host "  -> $errLine" }
         $fail++
     }
