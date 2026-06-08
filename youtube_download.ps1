@@ -48,13 +48,13 @@ foreach ($track in $tracks) {
     $outTemplate = "$output\$num %(title)s.%(ext)s"
 
     $result = & $ytdlp "ytsearch1:$track" `
-        -x --audio-format mp3 `
+        -f "bestaudio[ext=m4a]/bestaudio" `
         --no-playlist `
         --cookies-from-browser opera `
         -o $outTemplate `
         --no-warnings 2>&1
 
-    $downloaded = Get-ChildItem -Path $output -Filter "$num *.mp3" -File 2>$null
+    $downloaded = Get-ChildItem -Path $output -Filter "$num *" -File 2>$null
     if ($downloaded) {
         Write-Host " OK: $($downloaded.Name)"
         $ok++
