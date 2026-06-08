@@ -57,9 +57,10 @@ foreach ($track in $tracks) {
     $outTemplate = "$output\$num %(title)s.%(ext)s"
 
     $result = & $ytdlp "ytsearch1:$track" `
-        -f "bestaudio[ext=m4a]/bestaudio" `
+        -f 140 `
         --no-playlist `
         --cookies-from-browser opera `
+        --no-cache-dir `
         -o $outTemplate `
         --no-warnings 2>&1
 
@@ -69,8 +70,7 @@ foreach ($track in $tracks) {
         $ok++
     } else {
         Write-Host " FAIL"
-        $errLine = $result | Where-Object { $_ -match "ERROR" } | Select-Object -First 1
-        if ($errLine) { Write-Host "  -> $errLine" }
+        $result | Select-Object -First 6 | ForEach-Object { Write-Host "  | $_" }
         $fail++
     }
 
