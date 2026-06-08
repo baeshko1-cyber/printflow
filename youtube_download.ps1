@@ -50,6 +50,7 @@ foreach ($track in $tracks) {
     $result = & $ytdlp "ytsearch1:$track" `
         -x --audio-format mp3 `
         --no-playlist `
+        --cookies-from-browser opera `
         -o $outTemplate `
         --no-warnings 2>&1
 
