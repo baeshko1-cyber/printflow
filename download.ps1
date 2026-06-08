@@ -82,8 +82,13 @@ Write-Host "  Proverka avtorizatsii..."
 
 try {
     $status = Call-Api "/account/status" $h
-    $uid    = $status.account.uid
-    $uname  = $status.account.displayName
+    # try multiple possible field paths
+    $uid = $status.account.uid
+    if (-not $uid) { $uid = $status.uid }
+    if (-not $uid) { $uid = $status.account.login }
+    $uname = $status.account.displayName
+    if (-not $uname) { $uname = $status.account.login }
+    if (-not $uname) { $uname = $status.account.fullName }
     Write-Host "  OK! Privet, $uname (uid=$uid)"
 } catch {
     Write-Host "  Oshibka avtorizatsii. Proverte token."
@@ -95,12 +100,22 @@ Write-Host ""
 Write-Host "  Zagruzhayu pleylist..."
 
 $playlist = $null
-foreach ($ep in @("/users/$uid/playlists/$PLAYLIST`?rich-tracks=true", "/users/$uid/playlists/$PLAYLIST")) {
-    try { $playlist = Call-Api $ep $h; if ($playlist) { break } } catch {}
+$endpoints = @(
+    "/users/$uid/playlists/$PLAYLIST`?rich-tracks=true",
+    "/users/$uid/playlists/$PLAYLIST",
+    "/playlists/$PLAYLIST`?rich-tracks=true",
+    "/playlists/$PLAYLIST"
+)
+foreach ($ep in $endpoints) {
+    try {
+        $res = Call-Api $ep $h
+        if ($res) { $playlist = $res; break }
+    } catch {}
 }
 
 if (-not $playlist) {
     Write-Host "  Ne udalos zaguzit pleylist."
+    Write-Host "  Vozmozhno, nado otkryt pleylist v brauzere i sohranit ego v 'Moyu muzyku'."
     Read-Host "  Enter"
     exit
 }
